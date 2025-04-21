@@ -129,7 +129,7 @@
             background: document.querySelector('.background')
         };
         
-        let lastMultiplier = '1.00x';
+        let lastMultiplier = 1.00;
         let isFetching = false;
 
         async function fetchGameState() {
@@ -137,37 +137,32 @@
             isFetching = true;
             
             try {
-                // Используем прокси для обхода CORS
-                const proxyUrl = 'https://api.allorigins.win/get?url=';
-                const targetUrl = encodeURIComponent('https://1wine.life/lasttime');
+                // Используем cors-anywhere для обхода CORS
+                const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+                const targetUrl = 'https://1wine.life/lasttime';
                 
-                const response = await fetch(proxyUrl + targetUrl);
+                const response = await fetch(proxyUrl + targetUrl, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
                 
                 if (!response.ok) throw new Error('Network error');
                 
-                const data = await response.json();
+                const text = await response.text();
+                const newMultiplier = parseFloat(text.trim());
                 
-                // Парсим HTML из ответа
-                const parser = new DOMParser();
-                const htmlDoc = parser.parseFromString(data.contents, 'text/html');
+                if (isNaN(newMultiplier)) {
+                    throw new Error('Invalid multiplier format');
+                }
                 
-                // Находим элемент с коэффициентом (вам нужно уточнить селектор)
-                // Предположим, что коэффициент находится в элементе с классом .multiplier
-                const multiplierElement = htmlDoc.querySelector('.multiplier');
-                
-                if (multiplierElement) {
-                    const newMultiplier = multiplierElement.textContent.trim();
+                if (newMultiplier !== lastMultiplier) {
+                    showLoading();
                     
-                    if (newMultiplier !== lastMultiplier) {
-                        showLoading();
-                        
-                        setTimeout(() => {
-                            updateMultiplier(newMultiplier);
-                            hideLoading();
-                        }, 4000);
-                    }
-                } else {
-                    throw new Error('Multiplier element not found');
+                    setTimeout(() => {
+                        updateMultiplier(newMultiplier);
+                        hideLoading();
+                    }, 4000);
                 }
             } catch (error) {
                 console.error('Error:', error);
@@ -191,13 +186,9 @@
         }
 
         function updateMultiplier(newMultiplier) {
-            // Форматируем коэффициент, если нужно
-            let formatted = newMultiplier;
-            if (!formatted.includes('x') && !formatted.includes('X')) {
-                formatted += 'x';
-            }
+            const formatted = newMultiplier.toFixed(2) + 'x';
             elements.multiplier.textContent = formatted;
-            lastMultiplier = formatted;
+            lastMultiplier = newMultiplier;
         }
 
         // Запускаем с интервалом 1 секунда
