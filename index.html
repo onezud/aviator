@@ -110,7 +110,7 @@
     <div class="game-container">
         <div class="background"></div>
         <div class="luckyjet-logo"></div>
-        <div class="multiplier" id="multiplier">Connecting...</div>
+        <div class="multiplier" id="multiplier">x1.00</div>
         <div class="loading" id="loading"></div>
         <div class="jet-container">
             <div class="jet"></div>
@@ -128,48 +128,27 @@
             loading: document.getElementById('loading'),
             background: document.querySelector('.background')
         };
-        
-        let lastMultiplier = 1.00;
-        let isFetching = false;
+
+        let lastDisplayedMultiplier = 'x1.00';
 
         async function fetchGameState() {
-            if (isFetching) return;
-            isFetching = true;
-            
             try {
-                // Используем cors-anywhere для обхода CORS
-                const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
-                const targetUrl = 'https://1wine.life/lasttime';
-                
-                const response = await fetch(proxyUrl + targetUrl, {
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                });
-                
-                if (!response.ok) throw new Error('Network error');
-                
-                const text = await response.text();
-                const newMultiplier = parseFloat(text.trim());
-                
-                if (isNaN(newMultiplier)) {
-                    throw new Error('Invalid multiplier format');
-                }
-                
-                if (newMultiplier !== lastMultiplier) {
+                const response = await fetch('https://luckyjet-onezud.duckdns.org/game-state');
+                const data = await response.json();
+
+                // Если коэффициент отличается от последнего отображенного
+                if (data.multiplier !== lastDisplayedMultiplier) {
                     showLoading();
-                    
+
                     setTimeout(() => {
-                        updateMultiplier(newMultiplier);
+                        updateMultiplier(data.multiplier);
                         hideLoading();
-                    }, 4000);
+                    }, 3000); // Анимация загрузки 3 секунды
                 }
             } catch (error) {
-                console.error('Error:', error);
-                elements.multiplier.textContent = 'Error';
+                console.error('Ошибка получения состояния игры:', error);
+                elements.multiplier.textContent = 'x1.00';
                 hideLoading();
-            } finally {
-                isFetching = false;
             }
         }
 
@@ -186,14 +165,13 @@
         }
 
         function updateMultiplier(newMultiplier) {
-            const formatted = newMultiplier.toFixed(2) + 'x';
-            elements.multiplier.textContent = formatted;
-            lastMultiplier = newMultiplier;
+            elements.multiplier.textContent = newMultiplier;
+            lastDisplayedMultiplier = newMultiplier;
         }
 
-        // Запускаем с интервалом 1 секунда
+        // Обновляем состояние каждые 0.5 секунды
         fetchGameState();
-        setInterval(fetchGameState, 1000);
+        setInterval(fetchGameState, 500);
     </script>
 </body>
 </html>
